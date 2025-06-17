@@ -1,0 +1,551 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  Trophy,
+  Search,
+  Filter,
+  Clock,
+  Coins,
+  Award,
+  Star,
+  Target,
+  Brain,
+  Zap,
+  Crown,
+  Gem,
+  Shield,
+  Flame,
+  ArrowLeft,
+  Grid3X3,
+  List,
+  SortAsc,
+  Calendar,
+  TrendingUp
+} from 'lucide-react';
+import { NavHeader } from '@/components/nav-header';
+
+interface NFTTrophy {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  category: 'achievement' | 'hunt_completion' | 'milestone' | 'special';
+  earnedDate: string;
+  avgTime: number; // in seconds
+  totalAlgoEarned: number;
+  huntType?: string;
+  difficulty?: 'beginner' | 'intermediate' | 'expert';
+}
+
+export default function TrophyCabinetPage() {
+  const [trophies, setTrophies] = useState<NFTTrophy[]>([
+    {
+      id: 'nft_001',
+      title: 'First Discovery',
+      description: 'Completed your very first knowledge hunt',
+      imageUrl: 'https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=400',
+      rarity: 'common',
+      category: 'achievement',
+      earnedDate: '2024-01-15',
+      avgTime: 1247, // 20m 47s
+      totalAlgoEarned: 150
+    },
+    {
+      id: 'nft_002',
+      title: 'Science Explorer',
+      description: 'Master of scientific discoveries on Reddit',
+      imageUrl: 'https://images.pexels.com/photos/2280549/pexels-photo-2280549.jpeg?auto=compress&cs=tinysrgb&w=400',
+      rarity: 'rare',
+      category: 'hunt_completion',
+      earnedDate: '2024-01-20',
+      avgTime: 892, // 14m 52s
+      totalAlgoEarned: 750,
+      huntType: 'Science Mystery',
+      difficulty: 'expert'
+    },
+    {
+      id: 'nft_003',
+      title: 'Speed Demon',
+      description: 'Completed 5 hunts in under 10 minutes each',
+      imageUrl: 'https://images.pexels.com/photos/1181677/pexels-photo-1181677.jpeg?auto=compress&cs=tinysrgb&w=400',
+      rarity: 'epic',
+      category: 'achievement',
+      earnedDate: '2024-01-25',
+      avgTime: 487, // 8m 7s
+      totalAlgoEarned: 1200
+    },
+    {
+      id: 'nft_004',
+      title: 'Crypto Detective',
+      description: 'Uncovered hidden blockchain discussions',
+      imageUrl: 'https://images.pexels.com/photos/844124/pexels-photo-844124.jpeg?auto=compress&cs=tinysrgb&w=400',
+      rarity: 'rare',
+      category: 'hunt_completion',
+      earnedDate: '2024-02-01',
+      avgTime: 1156, // 19m 16s
+      totalAlgoEarned: 650,
+      huntType: 'Crypto Hunt',
+      difficulty: 'intermediate'
+    },
+    {
+      id: 'nft_005',
+      title: 'Knowledge Sage',
+      description: 'Reached 10,000 total experience points',
+      imageUrl: 'https://images.pexels.com/photos/1181263/pexels-photo-1181263.jpeg?auto=compress&cs=tinysrgb&w=400',
+      rarity: 'legendary',
+      category: 'milestone',
+      earnedDate: '2024-02-10',
+      avgTime: 743, // 12m 23s
+      totalAlgoEarned: 2500
+    },
+    {
+      id: 'nft_006',
+      title: 'Community Champion',
+      description: 'Helped 50+ fellow hunters with hints',
+      imageUrl: 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=400',
+      rarity: 'epic',
+      category: 'special',
+      earnedDate: '2024-02-15',
+      avgTime: 0, // Not applicable for community achievements
+      totalAlgoEarned: 800
+    },
+    {
+      id: 'nft_007',
+      title: 'Tech Pioneer',
+      description: 'Discovered cutting-edge technology discussions',
+      imageUrl: 'https://images.pexels.com/photos/1181298/pexels-photo-1181298.jpeg?auto=compress&cs=tinysrgb&w=400',
+      rarity: 'rare',
+      category: 'hunt_completion',
+      earnedDate: '2024-02-20',
+      avgTime: 1034, // 17m 14s
+      totalAlgoEarned: 550,
+      huntType: 'Tech Explorer',
+      difficulty: 'intermediate'
+    },
+    {
+      id: 'nft_008',
+      title: 'Perfect Streak',
+      description: 'Completed 10 consecutive hunts successfully',
+      imageUrl: 'https://images.pexels.com/photos/1181316/pexels-photo-1181316.jpeg?auto=compress&cs=tinysrgb&w=400',
+      rarity: 'legendary',
+      category: 'achievement',
+      earnedDate: '2024-02-25',
+      avgTime: 654, // 10m 54s
+      totalAlgoEarned: 3200
+    }
+  ]);
+
+  const [filteredTrophies, setFilteredTrophies] = useState<NFTTrophy[]>(trophies);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRarity, setSelectedRarity] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('date');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    let filtered = trophies;
+
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(trophy =>
+        trophy.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        trophy.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply rarity filter
+    if (selectedRarity !== 'all') {
+      filtered = filtered.filter(trophy => trophy.rarity === selectedRarity);
+    }
+
+    // Apply category filter
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(trophy => trophy.category === selectedCategory);
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'date':
+          return new Date(b.earnedDate).getTime() - new Date(a.earnedDate).getTime();
+        case 'rarity':
+          const rarityOrder = { legendary: 4, epic: 3, rare: 2, common: 1 };
+          return rarityOrder[b.rarity] - rarityOrder[a.rarity];
+        case 'algo':
+          return b.totalAlgoEarned - a.totalAlgoEarned;
+        case 'time':
+          return a.avgTime - b.avgTime;
+        default:
+          return 0;
+      }
+    });
+
+    setFilteredTrophies(filtered);
+  }, [searchTerm, selectedRarity, selectedCategory, sortBy, trophies]);
+
+  const formatTime = (seconds: number) => {
+    if (seconds === 0) return 'N/A';
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds}s`;
+  };
+
+  const getRarityConfig = (rarity: string) => {
+    switch (rarity) {
+      case 'legendary':
+        return {
+          color: 'from-yellow-400 to-orange-500',
+          textColor: 'text-yellow-600 dark:text-yellow-400',
+          bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
+          borderColor: 'border-yellow-300 dark:border-yellow-700',
+          icon: Crown
+        };
+      case 'epic':
+        return {
+          color: 'from-purple-400 to-pink-500',
+          textColor: 'text-purple-600 dark:text-purple-400',
+          bgColor: 'bg-purple-50 dark:bg-purple-900/20',
+          borderColor: 'border-purple-300 dark:border-purple-700',
+          icon: Gem
+        };
+      case 'rare':
+        return {
+          color: 'from-blue-400 to-cyan-500',
+          textColor: 'text-blue-600 dark:text-blue-400',
+          bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+          borderColor: 'border-blue-300 dark:border-blue-700',
+          icon: Shield
+        };
+      default:
+        return {
+          color: 'from-gray-400 to-gray-500',
+          textColor: 'text-gray-600 dark:text-gray-400',
+          bgColor: 'bg-gray-50 dark:bg-gray-900/20',
+          borderColor: 'border-gray-300 dark:border-gray-700',
+          icon: Star
+        };
+    }
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'achievement': return Award;
+      case 'hunt_completion': return Target;
+      case 'milestone': return TrendingUp;
+      case 'special': return Flame;
+      default: return Trophy;
+    }
+  };
+
+  const totalStats = {
+    totalTrophies: trophies.length,
+    totalAlgo: trophies.reduce((sum, trophy) => sum + trophy.totalAlgoEarned, 0),
+    avgTime: Math.round(trophies.filter(t => t.avgTime > 0).reduce((sum, trophy) => sum + trophy.avgTime, 0) / trophies.filter(t => t.avgTime > 0).length),
+    rareCount: trophies.filter(t => ['rare', 'epic', 'legendary'].includes(t.rarity)).length
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-900">
+      <NavHeader />
+      
+      <div className="pt-20 pb-8 px-4">
+        <div className="container mx-auto max-w-7xl">
+          {/* Back Navigation */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: isLoaded ? 1 : 0, x: isLoaded ? 0 : -20 }}
+            className="mb-6"
+          >
+            <Button variant="ghost" className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Lobby
+            </Button>
+          </motion.div>
+
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 bg-clip-text text-transparent">
+                Trophy Cabinet
+              </span>
+            </h1>
+            <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">
+              Your collection of earned NFT achievements and milestones
+            </p>
+
+            {/* Stats Overview */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+              <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+                <CardContent className="pt-4 text-center">
+                  <Trophy className="w-6 h-6 mx-auto mb-2 text-yellow-500" />
+                  <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{totalStats.totalTrophies}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Total Trophies</div>
+                </CardContent>
+              </Card>
+              <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+                <CardContent className="pt-4 text-center">
+                  <Coins className="w-6 h-6 mx-auto mb-2 text-emerald-500" />
+                  <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{totalStats.totalAlgo.toLocaleString()}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Total ALGO</div>
+                </CardContent>
+              </Card>
+              <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+                <CardContent className="pt-4 text-center">
+                  <Clock className="w-6 h-6 mx-auto mb-2 text-blue-500" />
+                  <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{formatTime(totalStats.avgTime)}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Avg. Time</div>
+                </CardContent>
+              </Card>
+              <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+                <CardContent className="pt-4 text-center">
+                  <Gem className="w-6 h-6 mx-auto mb-2 text-purple-500" />
+                  <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{totalStats.rareCount}</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Rare+</div>
+                </CardContent>
+              </Card>
+            </div>
+          </motion.div>
+
+          {/* Filters and Controls */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mb-8"
+          >
+            <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+              <CardContent className="pt-6">
+                <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+                  {/* Search */}
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      placeholder="Search trophies..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+
+                  {/* Filters */}
+                  <div className="flex flex-wrap gap-3">
+                    <select
+                      value={selectedRarity}
+                      onChange={(e) => setSelectedRarity(e.target.value)}
+                      className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300"
+                    >
+                      <option value="all">All Rarities</option>
+                      <option value="common">Common</option>
+                      <option value="rare">Rare</option>
+                      <option value="epic">Epic</option>
+                      <option value="legendary">Legendary</option>
+                    </select>
+
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300"
+                    >
+                      <option value="all">All Categories</option>
+                      <option value="achievement">Achievements</option>
+                      <option value="hunt_completion">Hunt Completions</option>
+                      <option value="milestone">Milestones</option>
+                      <option value="special">Special</option>
+                    </select>
+
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300"
+                    >
+                      <option value="date">Sort by Date</option>
+                      <option value="rarity">Sort by Rarity</option>
+                      <option value="algo">Sort by ALGO</option>
+                      <option value="time">Sort by Time</option>
+                    </select>
+
+                    {/* View Mode Toggle */}
+                    <div className="flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+                      <Button
+                        variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('grid')}
+                        className="rounded-none"
+                      >
+                        <Grid3X3 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant={viewMode === 'list' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('list')}
+                        className="rounded-none"
+                      >
+                        <List className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Trophy Grid */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            {filteredTrophies.length === 0 ? (
+              <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+                <CardContent className="pt-12 pb-12 text-center">
+                  <Trophy className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-xl font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                    No trophies found
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-500">
+                    Try adjusting your search or filter criteria
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className={viewMode === 'grid' 
+                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                : "space-y-4"
+              }>
+                {filteredTrophies.map((trophy, index) => {
+                  const rarityConfig = getRarityConfig(trophy.rarity);
+                  const CategoryIcon = getCategoryIcon(trophy.category);
+                  
+                  return (
+                    <motion.div
+                      key={trophy.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 * index }}
+                      whileHover={{ y: -5, scale: 1.02 }}
+                      className="group"
+                    >
+                      <Card className={`shadow-lg hover:shadow-xl transition-all duration-300 border-2 ${rarityConfig.borderColor} bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm overflow-hidden`}>
+                        {/* NFT Image */}
+                        <div className="relative overflow-hidden">
+                          <div className={`absolute inset-0 bg-gradient-to-br ${rarityConfig.color} opacity-20`} />
+                          <img
+                            src={trophy.imageUrl}
+                            alt={trophy.title}
+                            className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                          
+                          {/* Rarity Badge */}
+                          <div className="absolute top-3 right-3">
+                            <Badge className={`${rarityConfig.bgColor} ${rarityConfig.textColor} border-0 font-semibold`}>
+                              <rarityConfig.icon className="w-3 h-3 mr-1" />
+                              {trophy.rarity}
+                            </Badge>
+                          </div>
+
+                          {/* Category Badge */}
+                          <div className="absolute top-3 left-3">
+                            <Badge className="bg-black/50 text-white border-0">
+                              <CategoryIcon className="w-3 h-3 mr-1" />
+                              {trophy.category.replace('_', ' ')}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <CardContent className="p-6">
+                          {/* NFT Title and Description */}
+                          <div className="mb-4">
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-2">
+                              {trophy.title}
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                              {trophy.description}
+                            </p>
+                          </div>
+
+                          {/* Hunt Type and Difficulty (if applicable) */}
+                          {trophy.huntType && (
+                            <div className="mb-4">
+                              <Badge variant="outline" className="text-xs">
+                                {trophy.huntType}
+                                {trophy.difficulty && ` • ${trophy.difficulty}`}
+                              </Badge>
+                            </div>
+                          )}
+
+                          {/* Dynamic Stats */}
+                          <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                Avg. Time:
+                              </span>
+                              <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                {formatTime(trophy.avgTime)}
+                              </span>
+                            </div>
+                            
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                                <Coins className="w-3 h-3" />
+                                Total Earned:
+                              </span>
+                              <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                                {trophy.totalAlgoEarned} ALGO
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                Earned:
+                              </span>
+                              <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                {new Date(trophy.earnedDate).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+          </motion.div>
+
+          {/* Results Summary */}
+          {filteredTrophies.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="mt-12 text-center"
+            >
+              <p className="text-gray-600 dark:text-gray-400">
+                Showing {filteredTrophies.length} of {trophies.length} trophies
+              </p>
+            </motion.div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
