@@ -196,7 +196,11 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-900">
-      <NavHeader />
+      <NavHeader
+        isWalletConnected={connectedWallet}
+        walletAddress={walletAddress}
+        onConnectWallet={handleConnectWallet}
+      />
 
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-4">

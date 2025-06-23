@@ -16,13 +16,14 @@ import {
 } from 'lucide-react';
 import Link from 'next/link'
 
-export function NavHeader() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isWalletConnected, setIsWalletConnected] = useState(false);
+interface NavHeaderProps {
+  isWalletConnected: boolean;
+  walletAddress: string | null;
+  onConnectWallet: () => void;
+}
 
-  const handleConnectWallet = () => {
-    setIsWalletConnected(true);
-  };
+export function NavHeader({ isWalletConnected, walletAddress, onConnectWallet }: NavHeaderProps) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
     <header className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
@@ -70,14 +71,15 @@ export function NavHeader() {
           <Button 
             variant={isWalletConnected ? "outline" : "default"}
             size="sm" 
-            onClick={handleConnectWallet}
+            onClick={onConnectWallet}
+            disabled={isWalletConnected}
             className={isWalletConnected 
               ? "border-blue-200 text-blue-600 dark:border-blue-800 dark:text-blue-400" 
               : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
             }
           >
             <Wallet className="w-4 h-4 mr-2" />
-            {isWalletConnected ? 'Connected' : 'Connect'}
+            {isWalletConnected ? (walletAddress ? `${walletAddress.substring(0, 4)}...${walletAddress.substring(walletAddress.length - 4)}` : 'Connected') : 'Connect'}
           </Button>
 
           {/* Mobile Menu Toggle */}
