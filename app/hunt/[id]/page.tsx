@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,19 +25,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { NavHeader } from '@/components/nav-header';
-
-// Required for static export with dynamic routes
-export async function generateStaticParams() {
-  return [
-    { id: 'test-hunt-123' },
-    { id: 'HUNT_001' },
-    { id: 'HUNT_002' },
-    { id: 'HUNT_003' },
-    { id: 'science-mystery' },
-    { id: 'crypto-detective' },
-    { id: 'tech-explorer' }
-  ];
-}
+import { useWallet } from '@/app/providers/WalletProvider';
 
 interface HuntData {
   id: string;
@@ -49,43 +38,64 @@ interface HuntData {
   progress: number;
   hintsUsed: number;
   maxHints: number;
+  redditPostUrl: string;
 }
 
 export default function ActiveHuntPage() {
   const params = useParams();
+  const router = useRouter();
   const huntId = params.id as string;
+  const { walletAddress, showMessageBox } = useWallet();
 
-  const [huntData, setHuntData] = useState<HuntData>({
-    id: huntId,
-    title: 'The Science Mystery',
-    difficulty: 'expert',
-    timeRemaining: 300000, // 5 minutes in milliseconds
-    clue: 'Look for a recent breakthrough in quantum computing that has been discussed in r/science. The post should have significant engagement (500+ upvotes) and contain comments from verified researchers. Pay special attention to discussions about error correction and practical applications.',
-    targetSubreddit: 'r/science',
-    reward: 500,
-    progress: 65,
-    hintsUsed: 1,
-    maxHints: 3
-  });
+  const [huntData, setHuntData] = useState<HuntData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [permalinkInput, setPermalinkInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    setIsLoaded(true);
-    
-    // Update countdown timer
-    const interval = setInterval(() => {
-      setHuntData(prev => ({
-        ...prev,
-        timeRemaining: Math.max(0, prev.timeRemaining - 1000)
-      }));
-    }, 1000);
+    if (!huntId) {
+      setError('No Hunt ID specified.');
+      setIsLoading(false);
+      return;
+    }
 
-    return () => clearInterval(interval);
-  }, []);
+    const storedDataString = sessionStorage.getItem(`huntData-${huntId}`);
+    if (storedDataString) {
+      const storedData = JSON.parse(storedDataString);
+      const expiration = new Date(storedData.expiration_time).getTime();
+      const now = new Date().getTime();
+
+      setHuntData({
+        id: storedData.game_id,
+        title: storedData.hunt_details.post_title,
+        difficulty: storedData.hunt_details.difficulty,
+        timeRemaining: Math.max(0, expiration - now),
+        clue: storedData.clue,
+        targetSubreddit: storedData.subreddit,
+        reward: 500, // Placeholder, as this isn't in the API response
+        progress: 0,
+        hintsUsed: 0,
+        maxHints: 3,
+        redditPostUrl: storedData.reddit_post_url,
+      });
+    } else {
+      setError('Hunt data not found. It might have been lost on page refresh.');
+    }
+    setIsLoading(false);
+  }, [huntId]);
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (huntData && huntData.timeRemaining > 0) {
+      const interval = setInterval(() => {
+        setHuntData(prev => prev ? { ...prev, timeRemaining: Math.max(0, prev.timeRemaining - 1000) } : null);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [huntData?.id]); // Rerun only if huntData object itself changes
 
   const formatTime = (ms: number) => {
     const minutes = Math.floor(ms / 60000);
@@ -103,34 +113,104 @@ export default function ActiveHuntPage() {
   };
 
   const handleSubmit = async () => {
-    if (!permalinkInput.trim()) return;
+    if (!permalinkInput.trim() || !walletAddress || !huntData) return;
     
     setIsSubmitting(true);
     setSubmissionStatus('idle');
     
-    // Simulate API call
-    setTimeout(() => {
-      const success = Math.random() > 0.3; // 70% success rate
-      setSubmissionStatus(success ? 'success' : 'error');
-      setIsSubmitting(false);
-      
-      if (success) {
-        setHuntData(prev => ({ ...prev, progress: Math.min(100, prev.progress + 20) }));
+    try {
+      const response = await fetch('/api/submit_clue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          game_id: huntData.id,
+          user_wallet: walletAddress,
+          submitted_permalink: permalinkInput.trim(),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setSubmissionStatus('success');
+
+        // Retrieve the initial hunt data to get title and total time limit
+        const initialHuntDataString = sessionStorage.getItem(`huntData-${huntData.id}`);
+        let initialHuntData: any = null;
+        if (initialHuntDataString) {
+          initialHuntData = JSON.parse(initialHuntDataString);
+        }
+
+        // Construct the GameResult object for the results page
+        const gameResultPayload = {
+          success: result.success,
+          reason: result.reason,
+          factLearned: result.extracted_fact,
+          algoWon: result.rewards.algo_earned,
+          timeSpent: result.game_details.completion_time,
+          totalTime: 30 * 60, // Hardcoded 30 minutes (as per backend logic for hunt duration)
+          score: 0, // Placeholder: Backend does not currently provide score
+          rank: undefined, // Placeholder: Backend does not currently provide rank
+          bonusPoints: result.rewards.bonus_reward,
+          huntTitle: initialHuntData ? initialHuntData.hunt_details.post_title : 'Unknown Hunt', // From initial hunt data
+          difficulty: result.game_details.difficulty,
+          achievements: [], // Placeholder: Backend does not currently provide achievements
+        };
+
+        sessionStorage.setItem(`resultsData-${huntData.id}`, JSON.stringify(gameResultPayload));
+        showMessageBox('Success!', result.message, () => {
+          router.push(`/hunt/${huntData.id}/results`);
+        });
+        setHuntData(prev => prev ? { ...prev, progress: Math.min(100, prev.progress + 20) } : null);
         setPermalinkInput('');
+      } else {
+        setSubmissionStatus('error');
+        showMessageBox('Incorrect', result.message || 'That was not the correct comment. Please try again!');
       }
-    }, 2000);
+    } catch (err) {
+      setSubmissionStatus('error');
+      showMessageBox('Submission Error', 'An error occurred while submitting your discovery.');
+      console.error('Submission error:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleOpenReddit = () => {
-    window.open(`https://reddit.com/${huntData.targetSubreddit}`, '_blank');
+    if (huntData) {
+      window.open(huntData.redditPostUrl, '_blank');
+    }
   };
 
   const handleRequestHint = () => {
-    if (huntData.hintsUsed < huntData.maxHints) {
-      setHuntData(prev => ({ ...prev, hintsUsed: prev.hintsUsed + 1 }));
+    if (huntData && huntData.hintsUsed < huntData.maxHints) {
+      setHuntData(prev => prev ? { ...prev, hintsUsed: prev.hintsUsed + 1 } : null);
       // In a real app, this would fetch a new hint from the AI
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
+        <RefreshCw className="w-8 h-8 animate-spin mr-4" />
+        <span className="text-xl">Loading Hunt...</span>
+      </div>
+    );
+  }
+
+  if (error || !huntData) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white text-center p-4">
+        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Error Loading Hunt</h2>
+        <p className="text-gray-400 mb-6 max-w-md">{error || 'An unknown error occurred.'}</p>
+        <Button onClick={() => router.push('/')}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Return to Lobby
+        </Button>
+      </div>
+    );
+  }
 
   const timeIsLow = huntData.timeRemaining < 60000; // Less than 1 minute
 
@@ -143,19 +223,21 @@ export default function ActiveHuntPage() {
           {/* Back Navigation */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: isLoaded ? 1 : 0, x: isLoaded ? 0 : -20 }}
+            animate={{ opacity: 1, x: 0 }}
             className="mb-6"
           >
-            <Button variant="ghost" className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Lobby
+            <Button asChild variant="ghost" className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+              <Link href="/">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Lobby
+              </Link>
             </Button>
           </motion.div>
 
           {/* Hunt Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: isLoaded ? 1 : 0, y: isLoaded ? 0 : 20 }}
+            animate={{ opacity: 1, y: 0 }}
             className="text-center mb-8"
           >
             <h1 className="text-3xl md:text-4xl font-bold mb-4 text-gray-800 dark:text-gray-200">

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,22 +24,11 @@ import {
   Zap,
   Brain,
   Timer,
-  Users
+  Users,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 import { NavHeader } from '@/components/nav-header';
-
-// Required for static export with dynamic routes
-export async function generateStaticParams() {
-  return [
-    { id: 'test-hunt-123' },
-    { id: 'HUNT_001' },
-    { id: 'HUNT_002' },
-    { id: 'HUNT_003' },
-    { id: 'science-mystery' },
-    { id: 'crypto-detective' },
-    { id: 'tech-explorer' }
-  ];
-}
 
 interface GameResult {
   success: boolean;
@@ -57,35 +47,43 @@ interface GameResult {
 
 export default function HuntResultsPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
-  const huntId = params.id as string;
+  const router = useRouter();
+  const gameId = params.id as string;
 
-  // Mock result data - in real app, this would come from URL params or API
-  const [gameResult, setGameResult] = useState<GameResult>({
-    success: searchParams.get('success') === 'true' || Math.random() > 0.4, // 60% success rate for demo
-    reason: searchParams.get('reason') as any || 'completed',
-    factLearned: "Quantum computers using error correction can now maintain quantum states for over 100 microseconds, a breakthrough that brings practical quantum computing significantly closer to reality.",
-    algoWon: 500,
-    timeSpent: 847000, // 14 minutes 7 seconds
-    totalTime: 1800000, // 30 minutes
-    score: 1250,
-    rank: 7,
-    bonusPoints: 150,
-    huntTitle: "The Science Mystery",
-    difficulty: 'expert',
-    achievements: ['Speed Demon', 'First Try']
-  });
-
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [gameResult, setGameResult] = useState<GameResult | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
-    setIsLoaded(true);
-    if (gameResult.success) {
-      setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 3000);
+    if (!gameId) {
+      setError('No Game ID specified.');
+      setIsLoading(false);
+      return;
     }
-  }, [gameResult.success]);
+
+    const storedDataString = sessionStorage.getItem(`resultsData-${gameId}`);
+    if (storedDataString) {
+      try {
+        const storedData = JSON.parse(storedDataString);
+        setGameResult(storedData);
+        if (storedData.success) {
+          setShowConfetti(true);
+          // Remove confetti after animation
+          setTimeout(() => setShowConfetti(false), 5000);
+        }
+      } catch (e) {
+        console.error('Failed to parse game results from sessionStorage', e);
+        setError('Could not load game results. The data might be corrupted.');
+      }
+    } else {
+      setError(
+        'Game result data not found. It might have been lost on page refresh. Please return to the lobby.',
+      );
+    }
+
+    setIsLoading(false);
+  }, [gameId]);
 
   const formatTime = (ms: number) => {
     const minutes = Math.floor(ms / 60000);
@@ -103,7 +101,7 @@ export default function HuntResultsPage() {
   };
 
   const getResultConfig = () => {
-    if (gameResult.success) {
+    if (gameResult?.success) {
       return {
         title: 'Success!',
         subtitle: 'Hunt Completed Successfully',
@@ -112,7 +110,7 @@ export default function HuntResultsPage() {
         icon: CheckCircle,
         borderColor: 'border-emerald-200 dark:border-emerald-800'
       };
-    } else if (gameResult.reason === 'timeout') {
+    } else if (gameResult?.reason === 'timeout') {
       return {
         title: "Time's Up!",
         subtitle: 'Hunt Timer Expired',
@@ -135,6 +133,31 @@ export default function HuntResultsPage() {
 
   const resultConfig = getResultConfig();
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-white">
+        <RefreshCw className="w-8 h-8 animate-spin mr-4" />
+        <span className="text-xl">Loading Results...</span>
+      </div>
+    );
+  }
+
+  if (error || !gameResult) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white text-center p-4">
+        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Error Loading Results</h2>
+        <p className="text-gray-400 mb-6 max-w-md">{error || 'An unknown error occurred.'}</p>
+        <Button asChild>
+          <Link href="/">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Return to Lobby
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-900">
       <NavHeader />
@@ -147,15 +170,15 @@ export default function HuntResultsPage() {
               key={i}
               className="absolute w-2 h-2 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full"
               initial={{
-                x: Math.random() * window.innerWidth,
+                x: typeof window !== 'undefined' ? Math.random() * window.innerWidth : 0,
                 y: -10,
                 rotate: 0,
                 scale: Math.random() * 0.5 + 0.5
               }}
               animate={{
-                y: window.innerHeight + 10,
+                y: typeof window !== 'undefined' ? window.innerHeight + 10 : 800,
                 rotate: 360,
-                x: Math.random() * window.innerWidth
+                x: typeof window !== 'undefined' ? Math.random() * window.innerWidth : 0
               }}
               transition={{
                 duration: Math.random() * 2 + 2,
@@ -171,12 +194,14 @@ export default function HuntResultsPage() {
           {/* Back Navigation */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: isLoaded ? 1 : 0, x: isLoaded ? 0 : -20 }}
+            animate={{ opacity: 1, x: 0 }}
             className="mb-6"
           >
-            <Button variant="ghost" className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Lobby
+            <Button asChild variant="ghost" className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+              <Link href="/">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Lobby
+              </Link>
             </Button>
           </motion.div>
 
@@ -296,7 +321,7 @@ export default function HuntResultsPage() {
             {gameResult.rank && (
               <Card className="text-center shadow-lg border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
                 <CardContent className="pt-6">
-                  <Users className="w-8 h-8 mx-auto mb-3 text-orange-500" />
+                  <Trophy className="w-8 h-8 mx-auto mb-3 text-orange-500" />
                   <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">
                     #{gameResult.rank}
                   </div>
@@ -361,18 +386,22 @@ export default function HuntResultsPage() {
             transition={{ delay: 1.4 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
-            <Button
+            <Button asChild
               className="bg-gradient-to-r from-emerald-500 to-blue-500 hover:from-emerald-600 hover:to-blue-600 text-white font-semibold px-8 py-4 rounded-full text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
-              <Play className="mr-3 w-6 h-6" />
-              Play Again
+              <Link href="/">
+                <Play className="mr-3 w-6 h-6" />
+                Play Again
+              </Link>
             </Button>
 
-            <Button
+            <Button asChild
               className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-8 py-4 rounded-full text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
             >
-              <Trophy className="mr-3 w-6 h-6" />
-              Go to Trophy Cabinet
+              <Link href="/trophy-cabinet">
+                <Trophy className="mr-3 w-6 h-6" />
+                Go to Trophy Cabinet
+              </Link>
             </Button>
 
             <Button

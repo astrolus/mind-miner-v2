@@ -1,6 +1,5 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,14 +14,19 @@ import {
   Coins
 } from 'lucide-react';
 import Link from 'next/link'
+import { useWallet } from '@/app/providers/WalletProvider';
+import { useState } from 'react';
 
-interface NavHeaderProps {
-  isWalletConnected: boolean;
-  walletAddress: string | null;
-  onConnectWallet: () => void;
-}
+export function NavHeader() {
+  // If mobile menu state is needed, it should be managed locally or via another context
 
-export function NavHeader({ isWalletConnected, walletAddress, onConnectWallet }: NavHeaderProps) {
+  const {
+    connectedWallet,
+    walletAddress,
+    isPeraLoading,
+    handleConnectWallet,
+  } = useWallet();
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
@@ -61,7 +65,7 @@ export function NavHeader({ isWalletConnected, walletAddress, onConnectWallet }:
 
         {/* User Actions */}
         <div className="flex items-center gap-4">
-          {isWalletConnected && (
+          {connectedWallet && (
             <Badge variant="outline" className="hidden sm:flex text-emerald-600 border-emerald-200 dark:border-emerald-800 dark:text-emerald-400">
               <Coins className="w-3 h-3 mr-1" />
               1,250 ALGO
@@ -69,17 +73,17 @@ export function NavHeader({ isWalletConnected, walletAddress, onConnectWallet }:
           )}
 
           <Button 
-            variant={isWalletConnected ? "outline" : "default"}
+            variant={connectedWallet ? "outline" : "default"}
             size="sm" 
-            onClick={onConnectWallet}
-            disabled={isWalletConnected}
-            className={isWalletConnected 
+            onClick={handleConnectWallet} // Use handleConnectWallet from context
+            disabled={isPeraLoading || connectedWallet} // Disable if loading or already connected
+            className={connectedWallet 
               ? "border-blue-200 text-blue-600 dark:border-blue-800 dark:text-blue-400" 
               : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
             }
           >
             <Wallet className="w-4 h-4 mr-2" />
-            {isWalletConnected ? (walletAddress ? `${walletAddress.substring(0, 4)}...${walletAddress.substring(walletAddress.length - 4)}` : 'Connected') : 'Connect'}
+            {isPeraLoading ? 'Loading...' : (connectedWallet ? (walletAddress ? `${walletAddress.substring(0, 4)}...${walletAddress.substring(walletAddress.length - 4)}` : 'Connected') : 'Connect')}
           </Button>
 
           {/* Mobile Menu Toggle */}

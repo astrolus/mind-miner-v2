@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react'; // Import useRef for PeraWalletConnect instance
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -16,160 +16,61 @@ import {
   Sparkles,
   Play,
   ChevronDown,
-} from 'lucide-react';
+} from 'lucide-react'; // Import useRouter
 import { NavHeader } from '@/components/nav-header';
-import Link from 'next/link'
-
-// Dynamically import PeraWalletConnect to ensure it runs only on the client
-// let PeraWalletConnect: any;
-// if (typeof window !== 'undefined') {
-//   import('@perawallet/connect')
-//     .then((module) => {
-//       PeraWalletConnect = module.default;
-//       // No need to initialize here, will do in useEffect
-//     })
-//     .catch((error) =>
-//       console.error('Failed to load PeraWalletConnect:', error)
-//     );
-// }
-
-// Algorand SDK import
-// Note: While algosdk is imported, it's not strictly necessary for just connecting the wallet.
-// It would be used for creating and signing transactions later.
-import algosdk from 'algosdk';
+import { useRouter } from 'next/navigation';
+import { useWallet } from './providers/WalletProvider';
 
 export default function HomePage() {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [connectedWallet, setConnectedWallet] = useState(false);
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [isPeraLoading, setIsPeraLoading] = useState(true); // To store the connected address
+  const [isStartingHunt, setIsStartingHunt] = useState(false); // New state for hunt loading
 
-  // State for custom message box
-  const [messageBoxVisible, setMessageBoxVisible] = useState(false);
-  const [messageBoxTitle, setMessageBoxTitle] = useState('');
-  const [messageBoxContent, setMessageBoxContent] = useState('');
-
-  // Use useRef to store the PeraWalletConnect instance
-  const peraWalletRef = useRef<any>(null);
-  const isPeraInitialized = useRef(false);
+  const {
+    connectedWallet,
+    walletAddress,
+    isPeraLoading,
+    handleConnectWallet,
+    showMessageBox,
+  } = useWallet();
+  const router = useRouter(); // Initialize useRouter
 
   useEffect(() => {
     setIsLoaded(true);
-
-    // Initialize Pera Wallet Connect when component mounts on the client
-    // and handle the dynamic import within useEffect for better control
-    const loadPeraWallet = async () => {
-      if (typeof window !== 'undefined' && !isPeraInitialized.current) {
-        isPeraInitialized.current = true; // Mark as initialized
-        console.log("Attempting to load Pera Wallet Connect...");
-        try {
-          const { PeraWalletConnect } = await import('@perawallet/connect');
-          peraWalletRef.current = new PeraWalletConnect({
-              chainId: 416002
-          }); 
-          
-          console.log("Pera Wallet Connect initialized:", peraWalletRef.current);
-
-          // Optional: Reconnect session if already connected
-          console.log("Attempting to reconnect Pera Wallet session...");
-
-          peraWalletRef.current
-            .reconnectSession()
-            .then((accounts: string[]) => {
-              if (accounts.length > 0) {
-                setConnectedWallet(true);
-                setWalletAddress(accounts[0]);
-                console.log('Reconnected to accounts:', accounts);
-                showMessageBox('Wallet Reconnected!', `Reconnected with account: ${accounts[0]?.substring(0, 8)}...${accounts[0]?.substring(accounts[0].length - 8)}`);
-
-              } else {
-                console.log('No existing Pera Wallet session found.');
-              }
-            })
-            .catch((e: any) => {
-              console.warn('Pera Wallet reconnect failed:', e);
-            })
-            .finally(() => {
-              setIsPeraLoading(false); // Set loading to false after reconnect attempt
-              console.log("Pera Wallet loading complete.");
-            });
-        } catch (error) {
-          console.error('Failed to load PeraWalletConnect:', error);
-          setIsPeraLoading(false); // Ensure loading is false even on error
-          showMessageBox(
-            'Error',
-            'Failed to load wallet connector. Please refresh and try again.'
-          );
-        }
-      } else if (isPeraInitialized.current) {
-        console.log("Pera Wallet already initialized, skipping re-load.");
-        setIsPeraLoading(false); // Ensure loading is false if already initialized
-      }
-    };
-
-    loadPeraWallet();
   }, []); // Empty dependency array ensures this runs once on mount
 
-  // Function to show custom message box
-  const showMessageBox = (title: string, content: string) => {
-    setMessageBoxTitle(title);
-    setMessageBoxContent(content);
-    setMessageBoxVisible(true);
-  };
-
-  // Function to hide custom message box
-  const hideMessageBox = () => {
-    setMessageBoxVisible(false);
-  };
-
-  const handleConnectWallet = async () => {
-    if (isPeraLoading || !peraWalletRef.current) {
-      showMessageBox(
-        'Please Wait',
-        'Pera Wallet library is still loading. Please try again in a moment.'
-      );
+  const handleStartHunt = async () => {
+    if (!walletAddress) {
+      showMessageBox('Wallet Not Connected', 'Please connect your Algorand wallet to start a hunt.');
       return;
     }
 
-    showMessageBox(
-      'Connecting Wallet...',
-      'Please open your Pera Wallet to approve the connection.'
-    );
+    setIsStartingHunt(true);
+    showMessageBox('Starting Hunt...', 'Please wait while we prepare your knowledge hunt.');
+
     try {
-      // Connect to Pera Wallet
-      const accounts: string[] = await peraWalletRef.current.connect();
-      console.log('Connected accounts:', accounts);
-      if (accounts.length > 0) {
-        setConnectedWallet(true);
-        setWalletAddress(accounts[0]);
-        showMessageBox(
-          'Wallet Connected!',
-          `Successfully connected with account: ${accounts[0]?.substring(
-            0,
-            8
-          )}...${accounts[0]?.substring(accounts[0].length - 8)}`
-        );
-        // You can store the connected account here (e.g., in localStorage, context, or Redux)
+      const response = await fetch('/api/start_hunt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ wallet_address: walletAddress }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        sessionStorage.setItem(`huntData-${data.game_id}`, JSON.stringify(data));
+        showMessageBox('Hunt Started!', 'Redirecting you to your new hunt...');
+        router.push(`/hunt/${data.game_id}`);
       } else {
-        showMessageBox(
-          'Connection Failed',
-          'No accounts found. Please try again.'
-        );
+        throw new Error(data.error || 'Failed to start hunt');
       }
     } catch (error: any) {
-      console.error('Wallet connection failed:', error);
-      // Handle errors (e.g., user rejected connection, network issues)
-      if (error.message && error.message.includes('User denied connection')) {
-        showMessageBox(
-          'Connection Denied',
-          'Wallet connection was denied by the user.'
-        );
-      } else {
-        showMessageBox(
-          'Connection Error',
-          `Failed to connect wallet: ${error.message || 'Unknown error'}.`
-        );
-      }
+      console.error('Error starting hunt:', error);
+      // Handle errors (e.g., API issues, network problems)
+      showMessageBox('Error Starting Hunt', error.message || 'An unexpected error occurred.');
+    } finally {
+      setIsStartingHunt(false);
     }
   };
 
@@ -196,11 +97,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-900">
-      <NavHeader
-        isWalletConnected={connectedWallet}
-        walletAddress={walletAddress}
-        onConnectWallet={handleConnectWallet}
-      />
+      <NavHeader />
 
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-4">
@@ -265,14 +162,15 @@ export default function HomePage() {
                 </Button>
               ) : (
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Link href="/hunt" passHref>
-                    <Button asChild className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-8 py-4 rounded-full text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
-                      <a> {/* Anchor tag is important for Link */}
-                        <Play className="mr-3 w-5 h-5" />
-                        Start Your First Hunt
-                      </a>
-                    </Button>
-                  </Link>
+                  {/* Modified button 1 */}
+                  <Button
+                    onClick={handleStartHunt}
+                    disabled={isStartingHunt}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-8 py-4 rounded-full text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+                  >
+                    <Play className="mr-3 w-5 h-5" />
+                    {isStartingHunt ? 'Starting Hunt...' : 'Start Your First Hunt'}
+                  </Button>
                   <Button className="border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white font-semibold px-8 py-4 rounded-full text-lg transition-all duration-300 hover:scale-105">
                     <Trophy className="mr-3 w-5 h-5" />
                     View Leaderboard
@@ -417,26 +315,6 @@ export default function HomePage() {
           </motion.div>
         </div>
       </section>
-
-      {/* Custom Message Box HTML (inline styles for simplicity) */}
-      {messageBoxVisible && (
-        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center z-[1000]">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl text-center max-w-sm w-full animate-fade-in-up">
-            <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-              {messageBoxTitle}
-            </h3>
-            <p className="text-gray-700 dark:text-gray-300 mb-6">
-              {messageBoxContent}
-            </p>
-            <button
-              onClick={hideMessageBox}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
-            >
-              OK
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
