@@ -517,7 +517,7 @@ async function createGameSession(
   generalFact: string
 ) {
   const expirationTime = new Date();
-  expirationTime.setMinutes(expirationTime.getMinutes() + 30); // 30 minutes from now
+  expirationTime.setMinutes(expirationTime.getMinutes() + 5); // 30 minutes from now
 
   const sessionData = {
     user_wallet: walletAddress,

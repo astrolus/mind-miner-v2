@@ -279,10 +279,10 @@ export default function ActiveHuntPage() {
               <Badge className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800">
                 {huntData.targetSubreddit}
               </Badge>
-              <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800">
+              {/* <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800">
                 <Trophy className="w-3 h-3 mr-1" />
                 {huntData.reward} ALGO
-              </Badge>
+              </Badge> */}
             </div>
           </motion.div>
 
@@ -482,7 +482,7 @@ export default function ActiveHuntPage() {
               className="space-y-6"
             >
               {/* Progress Overview */}
-              <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
+              {/* <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-lg">
                     <Target className="w-5 h-5 text-blue-500" />
@@ -509,7 +509,7 @@ export default function ActiveHuntPage() {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               {/* Hunt Tips */}
               <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
