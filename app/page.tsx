@@ -171,10 +171,6 @@ export default function HomePage() {
                     <Play className="mr-3 w-5 h-5" />
                     {isStartingHunt ? 'Starting Hunt...' : 'Start Your First Hunt'}
                   </Button>
-                  <Button className="border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white font-semibold px-8 py-4 rounded-full text-lg transition-all duration-300 hover:scale-105">
-                    <Trophy className="mr-3 w-5 h-5" />
-                    View Leaderboard
-                  </Button>
                 </div>
               )}
             </motion.div>
@@ -304,12 +300,8 @@ export default function HomePage() {
                   <Button className="bg-emerald-500 hover:bg-emerald-600 text-white font-semibold px-8 py-4 rounded-full text-lg shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
                     <Play className="mr-3 w-5 h-5" />
                     Start Your First Hunt
-                  </Button>
-                  <Button className="border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white font-semibold px-8 py-4 rounded-full text-lg transition-all duration-300 hover:scale-105">
-                    <Trophy className="mr-3 w-5 h-5" />
-                    View Leaderboard
-                  </Button>
-                </div>
+                  </Button> {/* Closing tag for the Button */}
+                </div> /* Closing tag for the div */
               )}
             </div>
           </motion.div>

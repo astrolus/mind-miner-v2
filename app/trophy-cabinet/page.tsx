@@ -31,6 +31,7 @@ import {
 import { NavHeader } from '@/components/nav-header';
 import { useWallet } from '@/app/providers/WalletProvider'; // Import the useWallet hook
 import { NFT } from '@/lib/supabase'; // Import NFT interface from your Supabase lib
+import Link from 'next/link';
 
 interface TrophyDisplayData {
   id: string;
@@ -347,9 +348,11 @@ export default function TrophyCabinetPage() {
             animate={{ opacity: isLoaded ? 1 : 0, x: isLoaded ? 0 : -20 }}
             className="mb-6"
           >
-            <Button variant="ghost" className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Lobby
+            <Button asChild variant="ghost" className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+              <Link href="/">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Lobby
+              </Link>
             </Button>
           </motion.div>
 

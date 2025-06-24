@@ -55,12 +55,9 @@ export function NavHeader() {
             <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
               Hunts
             </a>
-            <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
-              Leaderboard
-            </a>
-            <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
-              Community
-            </a>
+            <Link href="/trophy-cabinet" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+              Trophy Cabinet
+            </Link>
           </nav>
         </div>
 
@@ -111,11 +108,11 @@ export function NavHeader() {
             <a href="#" className="block py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
               Active Hunts
             </a>
+            <Link href="/trophy-cabinet" className="block py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+              Trophy Cabinet
+            </Link>
             <a href="#" className="block py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
               Leaderboard
-            </a>
-            <a href="#" className="block py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
-              Community
             </a>
           </div>
         </motion.div>
