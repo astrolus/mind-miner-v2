@@ -307,6 +307,13 @@ export default function HomePage() {
           </motion.div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="py-8 text-center">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Built with curiosity by Zulu in San Francisco.
+        </p>
+      </footer>
     </div>
   );
 }
