@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link'
 import { useWallet } from '@/app/providers/WalletProvider';
+import Image from 'next/image';
 import { useState } from 'react';
 
 export function NavHeader() {
@@ -73,6 +74,16 @@ export function NavHeader() {
             </Badge>
           )}
 
+          {/* New Image Link */}
+          <Link href="https://bolt.new/" target="_blank" rel="noopener noreferrer" className="flex items-center">
+            <Image
+              src="/white_circle_360x360.png"
+              alt="Bolt.new Link"
+              width={50}
+              height={50}
+              className="rounded-full"
+            />
+          </Link>
           <Button 
             variant={connectedWallet ? "outline" : "default"}
             size="sm" 
