@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useWallet } from '@/app/providers/WalletProvider';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,21 +50,25 @@ interface ActiveHunt {
   reward: number;
 }
 
+const defaultStats: PlayerStats = {
+  totalHunts: 0,
+  completedHunts: 0,
+  avgCompletionTime: 0,
+  totalAlgoEarned: 0,
+  currentLevel: 1,
+  experience: 0,
+  experienceToNext: 500,
+  successRate: 0,
+  currentStreak: 0,
+  bestStreak: 0,
+  rank: 0,
+  achievements: 0,
+};
+
 export default function GameLobby() {
-  const [playerStats, setPlayerStats] = useState<PlayerStats>({
-    totalHunts: 47,
-    completedHunts: 38,
-    avgCompletionTime: 18.5,
-    totalAlgoEarned: 2847,
-    currentLevel: 12,
-    experience: 3420,
-    experienceToNext: 1580,
-    successRate: 81,
-    currentStreak: 7,
-    bestStreak: 15,
-    rank: 156,
-    achievements: 23
-  });
+  const [playerStats, setPlayerStats] = useState<PlayerStats>(defaultStats);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const { walletAddress } = useWallet();
 
   const [activeHunts, setActiveHunts] = useState<ActiveHunt[]>([
     {
@@ -86,6 +92,48 @@ export default function GameLobby() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
+    const fetchPlayerStats = async () => {
+      if (!walletAddress) {
+        setPlayerStats(defaultStats);
+        setLoadingStats(false);
+        return;
+      }
+
+      setLoadingStats(true);
+      try {
+        const response = await fetch(`/api/get_player_stats?userId=${walletAddress}&type=overview`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch player stats');
+        }
+        const data = await response.json();
+        
+        setPlayerStats({
+          totalHunts: data.stats.hunting.totalHunts || 0,
+          completedHunts: data.stats.hunting.completedHunts || 0,
+          avgCompletionTime: data.stats.hunting.averageTime || 0,
+          totalAlgoEarned: data.stats.rewards.totalAlgoEarned || 0,
+          currentLevel: data.stats.profile.level || 1,
+          experience: data.stats.profile.experience || 0,
+          experienceToNext: data.stats.profile.experienceToNext || 500,
+          successRate: data.stats.hunting.successRate || 0,
+          currentStreak: data.stats.hunting.currentStreak || 0,
+          bestStreak: data.stats.hunting.bestStreak || 0,
+          rank: data.stats.rankings.globalRank || 0,
+          achievements: data.stats.rewards.achievements || 0
+        });
+
+      } catch (error) {
+        console.error("Error fetching player stats for lobby:", error);
+        setPlayerStats(defaultStats);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchPlayerStats();
+  }, [walletAddress]);
+
+  useEffect(() => {
     setIsLoaded(true);
     
     // Update active hunt timers
@@ -97,7 +145,7 @@ export default function GameLobby() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, []); // This effect runs once for animations and timers
 
   const formatTime = (ms: number) => {
     const hours = Math.floor(ms / 3600000);
@@ -181,12 +229,14 @@ export default function GameLobby() {
                         Start New Hunt
                         <ChevronRight className="ml-3 w-5 h-5" />
                       </Button>
-                      <Button 
+                      <Button asChild
                         variant="outline"
                         className="border-2 border-purple-300 text-purple-600 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-400 dark:hover:bg-purple-900/20 font-semibold px-6 py-3 rounded-xl"
                       >
-                        <Trophy className="mr-2 w-5 h-5" />
-                        Trophy Cabinet
+                        <Link href="/trophy-cabinet">
+                          <Trophy className="mr-2 w-5 h-5" />
+                          Trophy Cabinet
+                        </Link>
                       </Button>
                     </div>
                   </div>
@@ -358,13 +408,15 @@ export default function GameLobby() {
                     <span className="font-bold text-gray-800 dark:text-gray-200">#{playerStats.rank}</span>
                   </div>
 
-                  <Button 
+                  <Button asChild
                     variant="outline" 
                     className="w-full border-2 border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-700 dark:text-orange-400 dark:hover:bg-orange-900/20"
                   >
-                    <Trophy className="mr-2 w-4 h-4" />
-                    View Trophy Cabinet
-                    <ChevronRight className="ml-2 w-4 h-4" />
+                    <Link href="/trophy-cabinet">
+                      <Trophy className="mr-2 w-4 h-4" />
+                      View Trophy Cabinet
+                      <ChevronRight className="ml-2 w-4 h-4" />
+                    </Link>
                   </Button>
                 </CardContent>
               </Card>

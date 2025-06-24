@@ -26,6 +26,16 @@ export interface User {
   created_at: string;
 }
 
+export interface NFT {
+  id: string; // Primary key, e.g., UUID
+  user_wallet: string;
+  achievement_type: string; // e.g., 'first_discovery', 'perfect_expert'
+  hunt_id: string; // Link to game_sessions
+  metadata: any; // JSONB column for flexible metadata (e.g., imageUrl, completion_time, algo_earned)
+  mint_date: string; // ISO timestamp
+  transaction_id?: string; // Optional, if minted on-chain
+}
+
 export interface GameSession {
   game_id: string;
   user_wallet: string;
@@ -184,6 +194,24 @@ export class DatabaseService {
   }
 
   /**
+   * Fetch a user's NFTs from the nfts table
+   */
+  static async getNFTsByWalletAddress(walletAddress: string): Promise<{ data: NFT[] | null; error: any }> {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('nfts') // Assuming a table named 'nfts'
+        .select('*')
+        .eq('user_wallet', walletAddress)
+        .order('mint_date', { ascending: false });
+
+      return { data, error };
+    } catch (error) {
+      console.error('Error retrieving NFT info for given user:', error);
+      return { data: null, error };
+    }
+  }
+
+  /**
    * Update user statistics after hunt completion
    */
   static async updateUserStatsAfterHunt(
@@ -270,6 +298,24 @@ export class DatabaseService {
     } catch (error) {
       console.error('Error cleaning up expired sessions:', error);
       return { count: 0, error };
+    }
+  }
+
+  /**
+   * Insert a new NFT record
+   */
+  static async insertNFT(nftData: Partial<NFT>): Promise<{ data: NFT | null; error: any }> {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('nfts')
+        .insert(nftData)
+        .select()
+        .single();
+
+      return { data, error };
+    } catch (error) {
+      console.error('Error inserting NFT:', error);
+      return { data: null, error };
     }
   }
 }

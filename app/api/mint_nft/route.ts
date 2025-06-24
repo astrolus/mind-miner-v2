@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { DatabaseService, NFT } from '@/lib/supabase';
 // CORS headers for cross-origin requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -58,27 +59,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Record NFT in database
-    const nftRecord = {
-      id: mintResult.nftId,
-      assetId: mintResult.assetId,
-      userId,
-      walletAddress,
-      achievementType,
-      huntId,
-      metadata: nftMetadata,
-      mintedAt: Date.now(),
-      transactionId: mintResult.transactionId,
-      status: 'minted',
-      rarity: determineRarity(achievementType),
-      imageUrl: generateNFTImageUrl(achievementType, nftMetadata)
+    // Record NFT in database using Supabase
+    const newNft: Partial<NFT> = {
+      id: mintResult.nftId, // Use the generated NFT ID
+      user_wallet: walletAddress,
+      achievement_type: achievementType,
+      hunt_id: huntId,
+      metadata: nftMetadata, // Store the full generated metadata
+      mint_date: new Date().toISOString(), // Use current ISO timestamp
+      transaction_id: mintResult.transactionId,
     };
 
-    console.log('NFT minted:', nftRecord);
+    const { data: insertedNft, error: dbInsertError } = await DatabaseService.insertNFT(newNft);
+
+    if (dbInsertError) {
+      console.error('Error inserting NFT into DB:', dbInsertError);
+      // If DB insertion fails, we still consider the mint successful from the blockchain perspective
+      // but return an error indicating the DB record failed.
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'NFT minted but failed to record in database',
+          details: dbInsertError.message,
+        },
+        { status: 500, headers: corsHeaders }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      nft: nftRecord,
+      nft: { ...insertedNft, assetId: mintResult.assetId, status: 'minted', rarity: determineRarity(achievementType), imageUrl: generateNFTImageUrl(achievementType, nftMetadata) },
       transaction: {
         id: mintResult.transactionId,
         assetId: mintResult.assetId,

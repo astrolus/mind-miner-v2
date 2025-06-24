@@ -206,12 +206,7 @@ async function getPlayerStatistics(userId: string, statsType: string) {
     default: // overview
       return {
         profile: playerStats.profile,
-        hunting: {
-          totalHunts: playerStats.hunting.totalHunts,
-          completedHunts: playerStats.hunting.completedHunts,
-          successRate: playerStats.hunting.successRate,
-          currentStreak: playerStats.hunting.currentStreak
-        },
+        hunting: playerStats.hunting, // Return the full hunting object for overview
         rewards: {
           totalAlgoEarned: playerStats.rewards.totalAlgoEarned,
           totalNFTs: playerStats.rewards.totalNFTs,

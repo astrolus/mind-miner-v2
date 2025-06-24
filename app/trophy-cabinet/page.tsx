@@ -26,133 +26,188 @@ import {
   List,
   SortAsc,
   Calendar,
-  TrendingUp
+  TrendingUp,
 } from 'lucide-react';
 import { NavHeader } from '@/components/nav-header';
+import { useWallet } from '@/app/providers/WalletProvider'; // Import the useWallet hook
+import { NFT } from '@/lib/supabase'; // Import NFT interface from your Supabase lib
 
-interface NFTTrophy {
+interface TrophyDisplayData {
   id: string;
   title: string;
   description: string;
   imageUrl: string;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
-  category: 'achievement' | 'hunt_completion' | 'milestone' | 'special';
+  category: 'achievement' | 'hunt_completion' | 'milestone' | 'special'; // Derived from achievement_type or metadata
   earnedDate: string;
-  avgTime: number; // in seconds
-  totalAlgoEarned: number;
-  huntType?: string;
-  difficulty?: 'beginner' | 'intermediate' | 'expert';
+  avgTime: number; // in seconds, from metadata
+  totalAlgoEarned: number; // from metadata
+  huntType?: string; // from metadata
+  difficulty?: 'beginner' | 'intermediate' | 'expert'; // from metadata
 }
 
 export default function TrophyCabinetPage() {
-  const [trophies, setTrophies] = useState<NFTTrophy[]>([
-    {
-      id: 'nft_001',
-      title: 'First Discovery',
-      description: 'Completed your very first knowledge hunt',
-      imageUrl: 'https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=400',
-      rarity: 'common',
-      category: 'achievement',
-      earnedDate: '2024-01-15',
-      avgTime: 1247, // 20m 47s
-      totalAlgoEarned: 150
-    },
-    {
-      id: 'nft_002',
-      title: 'Science Explorer',
-      description: 'Master of scientific discoveries on Reddit',
-      imageUrl: 'https://images.pexels.com/photos/2280549/pexels-photo-2280549.jpeg?auto=compress&cs=tinysrgb&w=400',
-      rarity: 'rare',
-      category: 'hunt_completion',
-      earnedDate: '2024-01-20',
-      avgTime: 892, // 14m 52s
-      totalAlgoEarned: 750,
-      huntType: 'Science Mystery',
-      difficulty: 'expert'
-    },
-    {
-      id: 'nft_003',
-      title: 'Speed Demon',
-      description: 'Completed 5 hunts in under 10 minutes each',
-      imageUrl: 'https://images.pexels.com/photos/1181677/pexels-photo-1181677.jpeg?auto=compress&cs=tinysrgb&w=400',
-      rarity: 'epic',
-      category: 'achievement',
-      earnedDate: '2024-01-25',
-      avgTime: 487, // 8m 7s
-      totalAlgoEarned: 1200
-    },
-    {
-      id: 'nft_004',
-      title: 'Crypto Detective',
-      description: 'Uncovered hidden blockchain discussions',
-      imageUrl: 'https://images.pexels.com/photos/844124/pexels-photo-844124.jpeg?auto=compress&cs=tinysrgb&w=400',
-      rarity: 'rare',
-      category: 'hunt_completion',
-      earnedDate: '2024-02-01',
-      avgTime: 1156, // 19m 16s
-      totalAlgoEarned: 650,
-      huntType: 'Crypto Hunt',
-      difficulty: 'intermediate'
-    },
-    {
-      id: 'nft_005',
-      title: 'Knowledge Sage',
-      description: 'Reached 10,000 total experience points',
-      imageUrl: 'https://images.pexels.com/photos/1181263/pexels-photo-1181263.jpeg?auto=compress&cs=tinysrgb&w=400',
-      rarity: 'legendary',
-      category: 'milestone',
-      earnedDate: '2024-02-10',
-      avgTime: 743, // 12m 23s
-      totalAlgoEarned: 2500
-    },
-    {
-      id: 'nft_006',
-      title: 'Community Champion',
-      description: 'Helped 50+ fellow hunters with hints',
-      imageUrl: 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=400',
-      rarity: 'epic',
-      category: 'special',
-      earnedDate: '2024-02-15',
-      avgTime: 0, // Not applicable for community achievements
-      totalAlgoEarned: 800
-    },
-    {
-      id: 'nft_007',
-      title: 'Tech Pioneer',
-      description: 'Discovered cutting-edge technology discussions',
-      imageUrl: 'https://images.pexels.com/photos/1181298/pexels-photo-1181298.jpeg?auto=compress&cs=tinysrgb&w=400',
-      rarity: 'rare',
-      category: 'hunt_completion',
-      earnedDate: '2024-02-20',
-      avgTime: 1034, // 17m 14s
-      totalAlgoEarned: 550,
-      huntType: 'Tech Explorer',
-      difficulty: 'intermediate'
-    },
-    {
-      id: 'nft_008',
-      title: 'Perfect Streak',
-      description: 'Completed 10 consecutive hunts successfully',
-      imageUrl: 'https://images.pexels.com/photos/1181316/pexels-photo-1181316.jpeg?auto=compress&cs=tinysrgb&w=400',
-      rarity: 'legendary',
-      category: 'achievement',
-      earnedDate: '2024-02-25',
-      avgTime: 654, // 10m 54s
-      totalAlgoEarned: 3200
-    }
-  ]);
-
-  const [filteredTrophies, setFilteredTrophies] = useState<NFTTrophy[]>(trophies);
+  const [trophies, setTrophies] = useState<TrophyDisplayData[]>([]);
+  const [filteredTrophies, setFilteredTrophies] = useState<TrophyDisplayData[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRarity, setSelectedRarity] = useState<string>('all');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('date');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isLoaded, setIsLoaded] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [playerOverallStats, setPlayerOverallStats] = useState<{
+    totalAlgoEarned: number;
+    avgCompletionTime: number; // in minutes from API
+    totalHunts: number;
+  } | null>(null);
+  const { walletAddress } = useWallet(); // Get the wallet address from the provider
 
   useEffect(() => {
-    setIsLoaded(true);
-  }, []);
+    const fetchTrophies = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // IMPORTANT: Replace with actual user wallet address from your auth system
+        const userWallet = walletAddress;
+
+        if (!userWallet) {
+          setError('Please connect your wallet.');
+          setLoading(false);
+          return;
+        }
+
+        // Fetch Player Overall Stats from the users table
+        const statsResponse = await fetch(`/api/get_player_stats?userId=${userWallet}&type=overview`);
+        if (!statsResponse.ok) {
+          const errorData = await statsResponse.json();
+          throw new Error(errorData.error || 'Failed to fetch player stats');
+        }
+        const statsData = await statsResponse.json();
+        setPlayerOverallStats({
+          totalAlgoEarned: statsData.stats.rewards.totalAlgoEarned || 0,
+          avgCompletionTime: statsData.stats.hunting.averageTime || 0,
+          totalHunts: statsData.stats.hunting.totalHunts || 0,
+        });
+
+        const response = await fetch(`/api/get_nfts?userId=${userWallet}`);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to fetch NFTs');
+        }
+        const data = await response.json();
+
+        // Helper functions (ideally in a shared utility file)
+        const formatAchievementName = (type: string): string => {
+          return type
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+        };
+
+        const getAchievementDescription = (type: string): string => {
+          const descriptions = {
+            first_discovery: 'Commemorates your very first successful knowledge hunt on MindMiner.',
+            speed_demon: 'Awarded for completing multiple hunts with exceptional speed and accuracy.',
+            science_explorer: 'Recognizes mastery in discovering scientific knowledge and research.',
+            perfect_streak: 'Celebrates an impressive streak of consecutive successful hunts.',
+            community_champion: 'Honors outstanding contributions to the MindMiner community.',
+            knowledge_sage: 'The highest honor for accumulated wisdom and discovery achievements.',
+            crypto_detective: 'Specialized achievement for uncovering blockchain and crypto insights.',
+            tech_pioneer: 'Awarded for discovering cutting-edge technology discussions and innovations.',
+            perfect_expert: 'Awarded for a perfect completion of an expert-level hunt.'
+          };
+          return descriptions[type as keyof typeof descriptions] || `Special achievement earned through exceptional performance in MindMiner hunts.`;
+        };
+
+        const determineRarity = (type: string): 'common' | 'rare' | 'epic' | 'legendary' => {
+          const rarityMap = {
+            first_discovery: 'common',
+            speed_demon: 'rare',
+            science_explorer: 'rare',
+            perfect_streak: 'epic',
+            community_champion: 'epic',
+            knowledge_sage: 'legendary',
+            crypto_detective: 'rare',
+            tech_pioneer: 'rare',
+            perfect_expert: 'legendary'
+          };
+          return (rarityMap[type as keyof typeof rarityMap] || 'common') as 'common' | 'rare' | 'epic' | 'legendary';
+        };
+
+        const generateNFTImageUrl = (type: string): string => {
+          const imageMap = {
+            first_discovery: 'https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=400',
+            speed_demon: 'https://images.pexels.com/photos/1181677/pexels-photo-1181677.jpeg?auto=compress&cs=tinysrgb&w=400',
+            science_explorer: 'https://images.pexels.com/photos/2280549/pexels-photo-2280549.jpeg?auto=compress&cs=tinysrgb&w=400',
+            perfect_streak: 'https://images.pexels.com/photos/1181316/pexels-photo-1181316.jpeg?auto=compress&cs=tinysrgb&w=400',
+            community_champion: 'https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg?auto=compress&cs=tinysrgb&w=400',
+            knowledge_sage: 'https://images.pexels.com/photos/1181263/pexels-photo-1181263.jpeg?auto=compress&cs=tinysrgb&w=400',
+            crypto_detective: 'https://images.pexels.com/photos/844124/pexels-photo-844124.jpeg?auto=compress&cs=tinysrgb&w=400',
+            tech_pioneer: 'https://images.pexels.com/photos/1181298/pexels-photo-1181298.jpeg?auto=compress&cs=tinysrgb&w=400',
+            perfect_expert: 'https://images.pexels.com/photos/1181263/pexels-photo-1181263.jpeg?auto=compress&cs=tinysrgb&w=400'
+          };
+          return imageMap[type as keyof typeof imageMap] || 'https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg?auto=compress&cs=tinysrgb&w=400';
+        };
+
+        const mappedTrophies: TrophyDisplayData[] = data.nfts.map((nft: NFT) => {
+          const metadata = nft.metadata || {};
+          const achievementType = nft.achievement_type;
+
+          // Helper to get value, prioritizing direct metadata property, then attributes
+          const getValue = (key: string, defaultValue: any = 0) => {
+            if (metadata[key] !== undefined) return metadata[key];
+            const attr = metadata.attributes?.find((a: any) => a.trait_type === key);
+            return attr ? attr.value : defaultValue;
+          };
+
+          const completionTime = getValue('completion_time', 0);
+          const algoEarned = getValue('algo_earned', 0);
+          const huntDifficulty = getValue('hunt_difficulty');
+          const huntType = getValue('hunt_type');
+
+          let category: TrophyDisplayData['category'] = 'achievement';
+          if (metadata.category) { // If a specific category is set in metadata
+            category = metadata.category;
+          } else { // Fallback based on achievement_type
+            if (achievementType.includes('hunt') || achievementType.includes('expert') || achievementType.includes('detective') || achievementType.includes('explorer') || achievementType.includes('pioneer')) {
+              category = 'hunt_completion';
+            } else if (achievementType.includes('milestone') || achievementType.includes('sage')) {
+              category = 'milestone';
+            } else if (achievementType.includes('community') || achievementType.includes('special') || achievementType.includes('champion')) {
+              category = 'special';
+            }
+          }
+
+          return {
+            id: nft.id,
+            title: metadata.name || formatAchievementName(achievementType),
+            description: metadata.description || getAchievementDescription(achievementType),
+            imageUrl: metadata.image || generateNFTImageUrl(achievementType),
+            rarity: determineRarity(achievementType),
+            category: category,
+            earnedDate: nft.mint_date ? new Date(nft.mint_date).toISOString().split('T')[0] : 'N/A',
+            avgTime: completionTime,
+            totalAlgoEarned: algoEarned,
+            huntType: huntType,
+            difficulty: huntDifficulty,
+          };
+        });
+
+        setTrophies(mappedTrophies);
+        setFilteredTrophies(mappedTrophies); // Initialize filtered trophies
+      } catch (err) {
+        console.error('Error fetching trophies:', err);
+        setError(err instanceof Error ? err.message : 'An unknown error occurred.');
+      } finally {
+        setLoading(false);
+        setIsLoaded(true); // Indicate that initial load is complete for animations
+      }
+    };
+
+    fetchTrophies();
+  }, []); // Empty dependency array means this runs once on mount
 
   useEffect(() => {
     let filtered = trophies;
@@ -194,6 +249,30 @@ export default function TrophyCabinetPage() {
 
     setFilteredTrophies(filtered);
   }, [searchTerm, selectedRarity, selectedCategory, sortBy, trophies]);
+
+  // Add loading and error UI
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-900">
+        <div className="text-center text-gray-600 dark:text-gray-300">
+          <Trophy className="w-16 h-16 mx-auto mb-4 animate-bounce" />
+          <p className="text-xl">Loading your trophy cabinet...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-gray-100 dark:from-slate-900 dark:to-gray-900">
+        <div className="text-center text-red-500">
+          <p className="text-xl">Error: {error}</p>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">Please try again later.</p>
+        </div>
+      </div>
+    );
+  }
+
 
   const formatTime = (seconds: number) => {
     if (seconds === 0) return 'N/A';
@@ -250,9 +329,9 @@ export default function TrophyCabinetPage() {
   };
 
   const totalStats = {
-    totalTrophies: trophies.length,
-    totalAlgo: trophies.reduce((sum, trophy) => sum + trophy.totalAlgoEarned, 0),
-    avgTime: Math.round(trophies.filter(t => t.avgTime > 0).reduce((sum, trophy) => sum + trophy.avgTime, 0) / trophies.filter(t => t.avgTime > 0).length),
+    totalTrophies: playerOverallStats?.totalHunts || 0, // Use total_hunts_completed from API
+    totalAlgo: playerOverallStats?.totalAlgoEarned || 0, // Use total_testnet_algo_earned from API
+    avgTime: (playerOverallStats?.avgCompletionTime || 0) * 60, // Use avg_completion_time from API (in minutes, convert to seconds)
     rareCount: trophies.filter(t => ['rare', 'epic', 'legendary'].includes(t.rarity)).length
   };
 
@@ -296,7 +375,7 @@ export default function TrophyCabinetPage() {
                 <CardContent className="pt-4 text-center">
                   <Trophy className="w-6 h-6 mx-auto mb-2 text-yellow-500" />
                   <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">{totalStats.totalTrophies}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Total Trophies</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Total Hunts</div>
                 </CardContent>
               </Card>
               <Card className="shadow-lg border-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm">
