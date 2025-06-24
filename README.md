@@ -136,4 +136,4 @@ To run Mind-Miner locally:
 
 Built with curiosity by Zulu in San Francisco.
 * [My GitHub Profile](https://github.com/astrolus) * [Connect on LinkedIn](https://www.linkedin.com/in/zulu-nwankwo) * [Follow on X (Twitter)](https://x.com/joshonaut14)
-```Feel free to connect or reach out\!```
+```Feel free to connect or reach out```
