@@ -25,6 +25,7 @@ export function NavHeader() {
     walletAddress,
     isPeraLoading,
     handleConnectWallet,
+    totalAlgoEarned, // Consume new state
   } = useWallet();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -65,10 +66,10 @@ export function NavHeader() {
 
         {/* User Actions */}
         <div className="flex items-center gap-4">
-          {connectedWallet && (
+          {connectedWallet && totalAlgoEarned !== null && (
             <Badge variant="outline" className="hidden sm:flex text-emerald-600 border-emerald-200 dark:border-emerald-800 dark:text-emerald-400">
               <Coins className="w-3 h-3 mr-1" />
-              1,250 ALGO
+              {totalAlgoEarned.toLocaleString()} ALGO
             </Badge>
           )}
 

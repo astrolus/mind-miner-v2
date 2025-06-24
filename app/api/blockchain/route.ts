@@ -58,7 +58,7 @@ async function getAccountBalance(address: string) {
   return NextResponse.json({
     address,
     balance: accountInfo.amount,
-    balanceAlgo: accountInfo.amount / 1000000, // Convert microAlgos to Algos
+    balanceAlgo: Number(accountInfo.amount) / 1000000, // Convert microAlgos to Algos
     assets: accountInfo.assets || [],
     participation: accountInfo.participation || null
   });

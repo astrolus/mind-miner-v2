@@ -278,7 +278,7 @@ export default function HuntResultsPage() {
                     <Coins className="w-8 h-8" />
                     <div className="text-center">
                       <div className="text-3xl font-bold">
-                        {gameResult.algoWon} microAlgo
+                        {gameResult.algoWon} Algo
                       </div>
                       <div className="text-sm opacity-90">
                         {gameResult.success ? 'Earned' : 'Participation Reward'}
@@ -337,7 +337,7 @@ export default function HuntResultsPage() {
                   <div className="text-2xl font-bold text-gray-800 dark:text-gray-200">
                     +{gameResult.bonusPoints}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Bonus microAlgo</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">Bonus Algo</div>
                 </CardContent>
               </Card>
             )}

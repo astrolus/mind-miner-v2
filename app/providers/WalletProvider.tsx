@@ -16,6 +16,7 @@ interface WalletContextType {
   walletAddress: string | null;
   isPeraLoading: boolean;
   handleConnectWallet: () => Promise<void>;
+  totalAlgoEarned: number | null; // New: Total ALGO earned by the user
   showMessageBox: (title: string, content: string, onOk?: () => void) => void;
 }
 
@@ -27,6 +28,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [connectedWallet, setConnectedWallet] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [isPeraLoading, setIsPeraLoading] = useState(true);
+  const [totalAlgoEarned, setTotalAlgoEarned] = useState<number | null>(null); // New state
 
   // State for the custom message box
   const [messageBoxVisible, setMessageBoxVisible] = useState(false);
@@ -49,6 +51,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           if (accounts.length > 0) {
             setConnectedWallet(true);
             setWalletAddress(accounts[0]);
+            fetchPlayerAlgoStats(accounts[0]); // Fetch stats on reconnect
           }
         } catch (error) {
           console.error('Failed to load or reconnect PeraWalletConnect:', error);
@@ -65,6 +68,30 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     };
 
     loadPeraWallet();
+  }, []);
+
+  // New function to fetch player ALGO stats
+  const fetchPlayerAlgoStats = async (address: string) => {
+    try {
+      const response = await fetch(`/api/get_player_stats?userId=${address}&type=rewards`);
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setTotalAlgoEarned(data.stats.rewards.totalAlgoEarned);
+      } else {
+        console.error('Failed to fetch player stats:', data.error);
+        setTotalAlgoEarned(0); // Default to 0 if fetching fails
+      }
+    } catch (error) {
+      console.error('Network error fetching player stats:', error);
+      setTotalAlgoEarned(0); // Default to 0 on network error
+    }
+  };
+
+  useEffect(() => {
+    if (walletAddress) {
+      fetchPlayerAlgoStats(walletAddress); // Fetch stats when walletAddress becomes available
+    }
   }, []);
 
   const showMessageBox = (title: string, content: string, onOk?: () => void) => {
@@ -94,6 +121,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       if (accounts.length > 0) {
         setConnectedWallet(true);
         setWalletAddress(accounts[0]);
+        fetchPlayerAlgoStats(accounts[0]); // Fetch stats on initial connect
         showMessageBox(
           'Wallet Connected!',
           `Connected: ${accounts[0].substring(0, 8)}...`
@@ -114,6 +142,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     connectedWallet,
     walletAddress,
     isPeraLoading,
+    totalAlgoEarned, // Expose new state
     handleConnectWallet,
     showMessageBox,
   };
