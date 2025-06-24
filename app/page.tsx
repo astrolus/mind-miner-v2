@@ -310,8 +310,11 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="py-8 text-center">
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Built with curiosity by Zulu in San Francisco.
+        <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center justify-center">
+          Built with curiosity by Zulu in San Francisco. {' '}
+          <a href="https://instagram.com/joshonaut14" target="_blank" rel="noopener noreferrer" className="ml-1 text-blue-500 hover:underline">
+            Reach out on Instagram
+          </a>
         </p>
       </footer>
     </div>
