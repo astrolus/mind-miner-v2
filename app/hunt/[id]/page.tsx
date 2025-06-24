@@ -136,21 +136,17 @@ export default function ActiveHuntPage() {
 
         // Retrieve the initial hunt data to get title and total time limit
         const initialHuntDataString = sessionStorage.getItem(`huntData-${huntData.id}`);
-        let initialHuntData: any = null;
-        if (initialHuntDataString) {
-          initialHuntData = JSON.parse(initialHuntDataString);
-        }
+        const initialHuntData = initialHuntDataString ? JSON.parse(initialHuntDataString) : null;
 
-        // Construct the GameResult object for the results page
         const gameResultPayload = {
-          success: result.success,
-          reason: result.reason,
+          success: true,
+          reason: 'completed', // Assuming 'completed' for successful submission
           factLearned: result.extracted_fact,
           algoWon: result.rewards.algo_earned,
-          timeSpent: result.game_details.completion_time,
-          totalTime: 30 * 60, // Hardcoded 30 minutes (as per backend logic for hunt duration)
-          score: 0, // Placeholder: Backend does not currently provide score
-          rank: undefined, // Placeholder: Backend does not currently provide rank
+          timeSpent: result.game_details.completion_time * 1000, // Convert seconds to milliseconds
+          totalTime: 30 * 60 * 1000, // Hardcoded 30 minutes in milliseconds
+          score: 0, // Placeholder: Backend does not currently provide score,
+          rank: undefined, // Placeholder: Backend does not currently provide rank,
           bonusPoints: result.rewards.bonus_reward,
           huntTitle: initialHuntData ? initialHuntData.hunt_details.post_title : 'Unknown Hunt', // From initial hunt data
           difficulty: result.game_details.difficulty,
@@ -158,14 +154,46 @@ export default function ActiveHuntPage() {
         };
 
         sessionStorage.setItem(`resultsData-${huntData.id}`, JSON.stringify(gameResultPayload));
-        showMessageBox('Success!', result.message, () => {
+
+        showMessageBox('Hunt Completed!', 'Redirecting to results...', () => {
           router.push(`/hunt/${huntData.id}/results`);
         });
+
         setHuntData(prev => prev ? { ...prev, progress: Math.min(100, prev.progress + 20) } : null);
         setPermalinkInput('');
       } else {
         setSubmissionStatus('error');
-        showMessageBox('Incorrect', result.message || 'That was not the correct comment. Please try again!');
+
+        // Retrieve the initial hunt data for consistent payload, even on failure
+        const initialHuntDataString = sessionStorage.getItem(`huntData-${huntData.id}`);
+        const initialHuntData = initialHuntDataString ? JSON.parse(initialHuntDataString) : null;
+
+        // For failure, construct a payload reflecting the incorrect submission
+        const gameResultPayload = {
+          success: false,
+          reason: 'incorrect', // Assuming 'incorrect' for failed submission
+          factLearned: undefined, // No fact learned on failure
+          algoWon: 0, // No ALGO won on failure
+          timeSpent: 0, // Placeholder for time spent on failed attempt
+          totalTime: 30 * 60 * 1000, // Hardcoded 30 minutes in milliseconds
+          score: 0, // No score on failure
+          rank: undefined,
+          bonusPoints: 0, // No bonus points on failure
+          huntTitle: initialHuntData ? initialHuntData.hunt_details.post_title : 'Unknown Hunt',
+          difficulty: initialHuntData ? initialHuntData.hunt_details.difficulty : 'intermediate', // Use initial hunt difficulty
+          achievements: [],
+        };
+
+        // Store the game result for failure as well, in case it's needed for debugging or future features
+        sessionStorage.setItem(`resultsData-${huntData.id}`, JSON.stringify(gameResultPayload));
+
+        showMessageBox(
+          'Hunt Failed!',
+          result.message || 'That was not the correct comment. Please try again!',
+          () => {
+            router.push('/'); // Redirect to lobby on failure
+          }
+        );
       }
     } catch (err) {
       setSubmissionStatus('error');
