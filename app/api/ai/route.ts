@@ -141,7 +141,7 @@ function extractKeywords(content: string): string[] {
     .filter(word => word.length > 3 && !commonWords.includes(word))
     .slice(0, 10);
   
-  return [...new Set(words)];
+  return Array.from(new Set(words));
 }
 
 function generateSummary(content: string): string {

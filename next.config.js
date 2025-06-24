@@ -4,6 +4,7 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  swcMinify: false,
   images: { unoptimized: true },
   webpack: (config, { isServer }) => {
     // Ignore specific modules that are Node.js-only and cause issues in browser builds.

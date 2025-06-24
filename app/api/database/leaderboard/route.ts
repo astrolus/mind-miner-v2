@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
     // Add ranking to the results
     const leaderboard = (data || []).map((user, index) => ({
       ...user,
-      rank: index + 1,
-      wallet_display: `${user.wallet_address.slice(0, 6)}...${user.wallet_address.slice(-4)}`
+      rank: index + 1, 
+      wallet_display: `${user.wallet_address?.slice(0, 6)}...${user.wallet_address?.slice(-4)}`
     }));
 
     return NextResponse.json({

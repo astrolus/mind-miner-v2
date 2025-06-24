@@ -98,14 +98,14 @@ async function getAccountTransactions(address: string) {
 async function getNetworkStatus() {
   const status = await algodClient.status().do();
   
-  return NextResponse.json({
-    lastRound: status['last-round'],
-    lastConsensusVersion: status['last-version'],
-    nextConsensusVersion: status['next-version'],
-    nextConsensusVersionRound: status['next-version-round'],
-    nextConsensusVersionSupported: status['next-version-supported'],
-    timeSinceLastRound: status['time-since-last-round'],
-    catchupTime: status['catchup-time']
+  return NextResponse.json({ 
+    lastRound: status.lastRound,
+    lastConsensusVersion: status.lastVersion,
+    nextConsensusVersion: status.nextVersion,
+    nextConsensusVersionRound: status.nextVersionRound,
+    nextConsensusVersionSupported: status.nextVersionSupported,
+    timeSinceLastRound: status.timeSinceLastRound,
+    catchupTime: status.catchupTime
   });
 }
 
