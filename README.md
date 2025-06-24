@@ -28,7 +28,7 @@ Successful discoveries are not just for glory; they are rewarded with **Testnet 
 ## Live Demo
 
 Experience the hunt yourself\!
-🌐 **Live Application:** [mindminer.site](https://www.google.com/search?q=https://mindminer.site)
+🌐 **Live Application:** [mindminer.site](https://mindminer.site)
 
 ## Key Features
 
@@ -135,5 +135,5 @@ To run Mind-Miner locally:
 ## Contact
 
 Built with curiosity by Zulu in San Francisco.
-* [My GitHub Profile](https://github.com/astrolus) * [Connect on LinkedIn](https://www.linkedin.com/in/zulu-nwankwo) * [Follow on X (Twitter)](https://x.com/joshonaut14) ```
+``` * [My GitHub Profile](https://github.com/astrolus) * [Connect on LinkedIn](https://www.linkedin.com/in/zulu-nwankwo) * [Follow on X (Twitter)](https://x.com/joshonaut14) ```
 Feel free to connect or reach out\!
