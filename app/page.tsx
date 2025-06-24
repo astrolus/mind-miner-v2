@@ -63,7 +63,7 @@ export default function HomePage() {
         showMessageBox('Hunt Started!', 'Redirecting you to your new hunt...');
         router.push(`/hunt/${data.game_id}`);
       } else {
-        throw new Error(data.error || 'Failed to start hunt');
+        throw new Error(data.message || data.error || 'Failed to start hunt');
       }
     } catch (error: any) {
       console.error('Error starting hunt:', error);

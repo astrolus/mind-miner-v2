@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/supabase';
 import axios from 'axios';
 // Done with this endpoint
+import { setCache, getCache } from '@/lib/cache'; // Import cache utilities
+import { checkAndApplyRateLimit } from '@/lib/rateLimiter'; // Import rate limiter
 // CORS headers for cross-origin requests
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -42,6 +44,18 @@ export async function OPTIONS(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { wallet_address } = await request.json();
+
+    // Apply rate limit check for submissions (15/min, 1000/day)
+    const rateLimitResult = checkAndApplyRateLimit(wallet_address);
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        { 
+          error: rateLimitResult.message || 'Rate limit exceeded',
+          retryAfter: rateLimitResult.retryAfter
+        },
+        { status: 429, headers: corsHeaders }
+      );
+    }
 
     // Validate required parameters
     if (!wallet_address) {
@@ -116,6 +130,16 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Start hunt error:', error);
+    if (error instanceof Error && error.message === 'No suitable posts found after all attempts') {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'no_suitable_post',
+          message: 'Could not find a suitable knowledge hunt at this time. Please try again in a few moments.'
+        },
+        { status: 404, headers: corsHeaders }
+      );
+    }
     return NextResponse.json(
       { 
         error: 'Failed to start hunt',
@@ -149,6 +173,13 @@ async function ensureUserExists(walletAddress: string) {
  */
 async function getRedditAccessToken(): Promise<string | null> {
   try {
+    // Check cache first for the Reddit access token
+    const cachedToken = getCache<string>('reddit_access_token');
+    if (cachedToken) {
+      console.log('Using cached Reddit access token.');
+      return cachedToken;
+    }
+
     if (!REDDIT_CLIENT_ID || !REDDIT_CLIENT_SECRET) {
       console.warn('Reddit API credentials not configured, using mock data');
       return 'mock_token';
@@ -169,7 +200,10 @@ async function getRedditAccessToken(): Promise<string | null> {
       }
     );
 
-    return response.data.access_token;
+    const token = response.data.access_token;
+    // Cache the token for 55 minutes (it expires in 60 minutes)
+    setCache('reddit_access_token', token, 55 * 60); 
+    return token;
   } catch (error) {
     console.error('Reddit authentication error:', error);
     return null;
@@ -181,6 +215,12 @@ async function getRedditAccessToken(): Promise<string | null> {
  */
 async function findSuitablePost(token: string, maxAttempts: number = 5): Promise<{ subreddit: string; post: any }> {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    // Check cache for a suitable post found in a previous attempt
+    const cachedPost = getCache<{ subreddit: string; post: any }>(`suitable_post_attempt_${attempt}`);
+    if (cachedPost) {
+      console.log(`Using cached suitable post for attempt ${attempt}.`);
+      return cachedPost;
+    }
     try {
       // Randomly select a subreddit
       const subreddit = HUNT_SUBREDDITS[Math.floor(Math.random() * HUNT_SUBREDDITS.length)];
@@ -191,7 +231,8 @@ async function findSuitablePost(token: string, maxAttempts: number = 5): Promise
       
       // Filter posts with num_comments <= 20
       const suitablePosts = posts.filter((post: any) => 
-        post.num_comments > 0 && 
+        post.num_comments > 0 &&
+        !post.title.includes("Bookclub and Sources Wednesday!") &&
         post.num_comments <= 20 &&
         !post.stickied &&
         !post.is_self === false // Prefer link posts
@@ -200,7 +241,10 @@ async function findSuitablePost(token: string, maxAttempts: number = 5): Promise
       if (suitablePosts.length > 0) {
         // Randomly select from suitable posts
         const selectedPost = suitablePosts[Math.floor(Math.random() * suitablePosts.length)];
-        return { subreddit, post: selectedPost };
+        const result = { subreddit, post: selectedPost };
+        // Cache the result for a short period (e.g., 60 seconds) to reduce repeated API calls
+        setCache(`suitable_post_attempt_${attempt}`, result, 60); 
+        return result;
       }
 
       console.log(`No suitable posts found in r/${subreddit}, trying another subreddit...`);

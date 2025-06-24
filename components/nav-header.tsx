@@ -50,11 +50,14 @@ export function NavHeader() {
         </motion.div>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-6">
           <nav className="flex items-center gap-6">
-            <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
-              Hunts
-            </a>
+            <Link href="/lobby" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+              Lobby
+            </Link>
+            <Link href="/faq" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+              FAQ
+            </Link>
             <Link href="/trophy-cabinet" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
               Trophy Cabinet
             </Link>
@@ -108,6 +111,12 @@ export function NavHeader() {
             <a href="#" className="block py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
               Active Hunts
             </a>
+            <Link href="/lobby" className="block py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+              Lobby
+            </Link>
+            <Link href="/faq" className="block py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
+              FAQ
+            </Link>
             <Link href="/trophy-cabinet" className="block py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
               Trophy Cabinet
             </Link>

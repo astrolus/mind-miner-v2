@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     // Set default expiration if not provided (30 minutes from now)
     if (!sessionData.expiration_timestamp) {
       const expirationTime = new Date();
-      expirationTime.setMinutes(expirationTime.getMinutes() + 30);
+      expirationTime.setMinutes(expirationTime.getMinutes() + 5);
       sessionData.expiration_timestamp = expirationTime.toISOString();
     }
 

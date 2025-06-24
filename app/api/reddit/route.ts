@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { setCache, getCache } from '@/lib/cache'; // Import cache utilities
 
 // Reddit API configuration
 const REDDIT_CLIENT_ID = process.env.REDDIT_CLIENT_ID;
@@ -49,6 +50,13 @@ export async function POST(request: NextRequest) {
 }
 
 async function getRedditAccessToken() {
+  // Check cache first for the Reddit access token
+  const cachedToken = getCache<string>('reddit_access_token');
+  if (cachedToken) {
+    console.log('Using cached Reddit access token in reddit API route.');
+    return cachedToken;
+  }
+
   const auth = Buffer.from(`${REDDIT_CLIENT_ID}:${REDDIT_CLIENT_SECRET}`).toString('base64');
   
   const response = await fetch('https://www.reddit.com/api/v1/access_token', {
@@ -61,8 +69,10 @@ async function getRedditAccessToken() {
     body: 'grant_type=client_credentials'
   });
 
-  const data = await response.json();
-  return data.access_token;
+  const data = await response.json(); // Assuming response.json() returns { access_token: string, ... }
+  const token = data.access_token;
+  setCache('reddit_access_token', token, 55 * 60); // Cache for 55 minutes
+  return token;
 }
 
 async function searchReddit(subreddit: string | null, query: string | null, options: any) {
