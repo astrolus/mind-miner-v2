@@ -33,7 +33,7 @@ export function NavHeader() {
 
   return (
     <header className="fixed top-0 w-full z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
-      <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
+      <nav className="container mx-auto px-4 h-16 flex items-center justify-between relative"> {/* Added relative positioning */}
         {/* Logo */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -50,8 +50,8 @@ export function NavHeader() {
           </Link>
         </motion.div>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-6">
+        {/* Desktop Navigation - Centered */}
+        <div className="hidden md:flex items-center gap-6 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <nav className="flex items-center gap-6">
             <Link href="/lobby" className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
               Lobby
@@ -119,9 +119,6 @@ export function NavHeader() {
           className="md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800"
         >
           <div className="container mx-auto px-4 py-4 space-y-3">
-            <a href="#" className="block py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
-              Active Hunts
-            </a>
             <Link href="/lobby" className="block py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
               Lobby
             </Link>
@@ -131,9 +128,6 @@ export function NavHeader() {
             <Link href="/trophy-cabinet" className="block py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
               Trophy Cabinet
             </Link>
-            <a href="#" className="block py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
-              Leaderboard
-            </a>
           </div>
         </motion.div>
       )}
