@@ -119,9 +119,6 @@ export function NavHeader() {
           className="md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800"
         >
           <div className="container mx-auto px-4 py-4 space-y-3">
-            <a href="#" className="block py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
-              Active Hunts
-            </a>
             <Link href="/lobby" className="block py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
               Lobby
             </Link>
@@ -131,9 +128,6 @@ export function NavHeader() {
             <Link href="/trophy-cabinet" className="block py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
               Trophy Cabinet
             </Link>
-            <a href="#" className="block py-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
-              Leaderboard
-            </a>
           </div>
         </motion.div>
       )}
